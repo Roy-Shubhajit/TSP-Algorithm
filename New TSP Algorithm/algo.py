@@ -11,11 +11,41 @@ class paths:
 	path: []
 	cost: float = 0.0
 
+def edge_cost(G,u,v):
+	if G.has_edge(u,v):
+		return G[u][v]['weight']
+	else:
+		return 0
+
+def heuristic(G):
+	path = nx.algorithms.approximation.traveling_salesman.christofides(G)
+	ub = calc_cost_subs(G,path,1)
+	return ub
+
+def calc_cost_subs(G,path,flag=0):
+	cost = 0.0
+	i = 0
+	while i < len(path)-1:
+		cost += edge_cost(G,path[i],path[i+1])
+		i = i+1
+	if flag == 0:
+		print(Fore.GREEN +"Found path " + str(path) + " with cost " + str(cost) + ".")
+	return cost
+
+def findpath(v,path):
+	M = nx.empty_graph(v)
+	for i in path:
+		w = i[2]['weight']
+		M.add_edge(i[0],i[1], weight = w)
+	M.remove_node(0)
+	return nx.cycle_basis(M)
+
 def iscycle(v,path):
 	M = nx.empty_graph(v)
 	for i in path:
 		w = i[2]['weight']
 		M.add_edge(i[0],i[1], weight = w)
+	M.remove_node(0)
 	try:
 		nx.find_cycle(M, orientation="original")
 		return True
@@ -27,6 +57,7 @@ def morethantwo(v,path):
 	for i in path:
 		w = i[2]['weight']
 		M.add_edge(i[0],i[1], weight = w)
+	M.remove_node(0)
 	degrees = [val for (node, val) in M.degree()]
 	for i in degrees:
 		if i > 2:
@@ -38,6 +69,7 @@ def not_two(v,path):
 	for i in path:
 		w = i[2]['weight']
 		M.add_edge(i[0],i[1], weight = w)
+	M.remove_node(0)
 	degrees = [val for (node, val) in M.degree()]
 	for i in degrees:
 		if i != 2:
@@ -264,7 +296,8 @@ def sr_alg(G):
 	for i in range(v):
 		edge_list.pop(0)	
 	edge_stack = []
-	edge_repeat = set()
+	edge_repeat = []
+	back_track = []
 	checked_list = []
 	error_list = []
 	explored_list = []
@@ -275,87 +308,112 @@ def sr_alg(G):
 	Bound = 0
 	for i in range(v):
 		Bound = Bound + edge_list[e-i-1][2]['weight']
-	print(edge_list)
+	#print(edge_list)
+	#Bound = heuristic(G)
 	while len(edge_list) >= v:
 		if func == "1":
+			ed = []
 			ed = copy.deepcopy(edge_list)
-			while len(ed)-len(error_list)-len(edge_stack) > 0 or len(edge_stack) < v:
-				print("\n")
+			while len(ed) != 0 and len(edge_stack) < v:
 				x = ed.pop(0)
-				print(x)
 				if x not in edge_stack and x not in error_list:
-					print("not in path and not in error_list")
 					path.append(x)
-					
-					if path not in explored_list:
-						print("path not explored")
+					if path not in explored_list and path not in path_list:
 						if iscycle(v,path) == False and morethantwo(v,path) == False and cost(path) <= Bound:
-							print("Edge added")
+							print("Edge added from ",x[0],"to ",x[1],"with weight ",x[2]['weight'])
 							edge_stack.append(x)
-							print(edge_stack)
-							print("Explored List is ")
-							explored_list.append(edge_stack)
-							print(explored_list)
-							print(cost(path))
+							explored_list.append(copy.deepcopy(edge_stack))
+							if len(ed) == 0:
+								func = "2"
+								break
 						elif iscycle(v,path) == True and len(path) == v and cost(path) <= Bound and not_two(v,path) == False:
-							print("Cycle Found!!!")
+							print("Edge added from ",x[0],"to ",x[1],"with weight ",x[2]['weight'])
+							print("Cycle Found: ",findpath(v,path),", Cost: ",cost(path))
 							edge_stack.append(x)
-							explored_list.append(edge_stack)
-							path_list.append(edge_stack)
-							tsp.path = edge_stack
-							tsp.cosr = cost(edge_stack)
+							explored_list.append(copy.deepcopy(edge_stack))
+							path_list.append(copy.deepcopy(edge_stack))
+							tsp.path = findpath(v,edge_stack)
+							tsp.cost = cost(edge_stack)
 							Bound = cost(edge_stack)
-							print(edge_stack)
-							print("Cost = ",Bound)
-							adding_elements = set(edge_stack)
-							for i in adding_elements:
-								edge_repeat.add(i)
+							for i in edge_stack:
+								if i not in edge_repeat:
+									edge_repeat.append(copy.deepcopy(i))
 							func = "2"
-						elif len(path) == v-1 and (len(ed)-len(error_list)-len(path)) == 0:
-							print("Check")
+							break
+						elif len(path) == v-1 and len(ed) == 0 and cost(path) <= Bound and iscycle(v,path) == False and morethantwo(v,path) == False:
+							#print("3rd check")
 							edge_stack.append(x)
-							explored_list.append(edge_stack)
-							path_list.append(edge_stack)
+							explored_list.append(copy.deepcopy(edge_stack))
+							path_list.append(copy.deepcopy(edge_stack))
+							#print(edge_stack)
+							func = "2"
+							break
 						else:
-							print("Added in error_list")
+							#print("Edge from ",x[0],"to ",x[1],"with weight ",x[2]['weight'],"added to error_list")
 							error_list.append(x)
-							print("Path before:")
-							print(path)
-							explored_list.append(path)
-							print("Path after;")
+							explored_list.append(copy.deepcopy(path))
 							path.pop()
-							print(path)
-							print("Explored List: ")
-							print(explored_list)
+							if len(ed) == 0:
+								func = "2"
+								break
 					else:
-						print("edge removed")
+						print("path already there")
 						path.pop()
-			if len(ed)-len(error_list)-len(edge_stack) == 0 or len(path) == v:
+						if len(ed) == 0:
+							func = "2"
+							break
+			if len(ed) == 0:
 				func = "2"
+				#if len(ed)-len(error_list)-len(edge_stack) == 0 or len(path) == v:
+			#print("Current cost = ",cost(path), "vertex in path = ",len(path))
 		elif func == "2":
-			temp = copy.deepcopy(edge_list)		
+			#print("Entered Function 2")
+				
 			while len(edge_stack) > 0:
-				checked_list.append(edge_stack.pop())
+				temp = copy.deepcopy(edge_list)	
+				popped = edge_stack.pop()
+				checked_list.append(copy.deepcopy(popped))
 				path.pop()
-				something = temp.pop(0)
-				if something not in edge_stack and something not in error_list and something not in checked_list:
-					path.append(something)
-					if path not in explored_list:
-						if iscycle(v,path) == False and morethantwo(v,path) == False and cost(path) <= Bound:
-							explored_list.append(path)
-							error_list = []
-							checked_list = []
-							path.pop()
-							func = "1"
+				print("Edge removed from ",popped[0],"to ",popped[1],"with weight ",popped[2]['weight'])
+				for i in range(len(temp)):
+					something = temp.pop(0)
+
+					#print(something)
+					if something not in edge_stack and something not in checked_list and something not in edge_repeat:
+						path.append(something)
+						if path not in explored_list and path not in path_list  and path not in back_track:
+							if iscycle(v,path) == False and morethantwo(v,path) == False and cost(path) <= Bound:
+								
+								print("Edge added from ",something[0],"to ",something[1],"with weight ",something[2]['weight'],"\n")
+								edge_stack.append(something)
+								explored_list.append(copy.deepcopy(edge_stack))
+								
+								error_list = []
+								checked_list = []
+								func = "1"
+								break
+							else:
+								#print("Edge from ",x[0],"to ",x[1],"with weight ",x[2]['weight'],"added to error_list")
+								explored_list.append(copy.deepcopy(path))
+								path.pop(-1)
+							back_track.append(copy.deepcopy(path))
+						else:
+							path.pop(-1)
+				if func == "1":
+					break
 			if len(edge_stack) == 0:
-				edge_list.pop(0)
-				error_list = []
-				checked_list = []
 				func == "3"
+			#print("Function 2 Finished")
 			
 		elif func == "3":
-			edge_repeat.clear()
+			print("Entered function 3")
+			edge_list.pop(0)
+			error_list = []
+			checked_list = []
+			edge_repeat = []
+			print(edge_list)
 			func = "1"
+			print("Function 3 Finished")
 	t2 = datetime.datetime.now()
 	print("Time taken by New algorithm (hr:min:sec): ", t2-t1)
 	return tsp
