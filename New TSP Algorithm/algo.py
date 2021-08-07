@@ -411,6 +411,7 @@ def sr_alg(G):
 		elif func == "3":
 			print("Entered function 3")
 			edge_list.pop(0)
+			repeat = []
 			error_list = []
 			checked_list = []
 			edge_repeat = []
