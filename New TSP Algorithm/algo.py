@@ -380,7 +380,7 @@ def sr_alg(G):
 					something = temp.pop(0)
 
 					#print(something)
-					if something not in edge_stack and something not in checked_list and something not in edge_repeat:
+					if something not in edge_stack and something not in checked_list and something not in edge_repeat and something not in repeat:
 						path.append(something)
 						if path not in explored_list and path not in path_list  and path not in back_track:
 							if iscycle(v,path) == False and morethantwo(v,path) == False and cost(path) <= Bound:
@@ -389,8 +389,8 @@ def sr_alg(G):
 								edge_stack.append(something)
 								explored_list.append(copy.deepcopy(edge_stack))
 								for i in edge_stack:
-									if i not in edge_repeat:
-										edge_repeat.append(copy.deepcopy(i))
+									if i not in repeat:
+										repeat.append(copy.deepcopy(i))
 								error_list = []
 								checked_list = []
 								func = "1"
