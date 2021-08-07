@@ -402,6 +402,10 @@ def sr_alg(G):
 							back_track.append(copy.deepcopy(path))
 						else:
 							path.pop(-1)
+					elif len(edge_stack) == 0 and len(temp) == 0:
+						func = "3"
+						break
+						
 				if func == "1":
 					break
 			if len(edge_stack) == 0:
