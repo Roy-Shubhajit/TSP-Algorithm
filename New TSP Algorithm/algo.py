@@ -302,6 +302,7 @@ def sr_alg(G):
 	error_list = []
 	explored_list = []
 	path_list = []
+	repeat = []
 	tsp = paths([])
 	path = []
 	func = "1"
@@ -387,7 +388,9 @@ def sr_alg(G):
 								print("Edge added from ",something[0],"to ",something[1],"with weight ",something[2]['weight'],"\n")
 								edge_stack.append(something)
 								explored_list.append(copy.deepcopy(edge_stack))
-								
+								for i in edge_stack:
+									if i not in edge_repeat:
+										edge_repeat.append(copy.deepcopy(i))
 								error_list = []
 								checked_list = []
 								func = "1"
